@@ -1,12 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import UserController from '../../../lib/controllers/UserController';
+import dbConnect from '../../../lib/config/database';
 import { authenticateUser, AuthenticatedRequest } from '../../../lib/middleware/auth';
 import { ApiError, handleApiError } from '../../../lib/utils/errorHandler';
 import jwt from 'jsonwebtoken';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Connect to database
-  await import('../../../lib/config/database');
+  await dbConnect();
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -21,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Cast request to AuthenticatedRequest to access user property
     const authenticatedReq = req as AuthenticatedRequest;
-    
+
     const result = await UserController.getUserProfile(authenticatedReq, undefined as any);
     return res.status(200).json(result);
   } catch (error: any) {

@@ -1,11 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import TicketController from '../../../lib/controllers/TicketController';
+import dbConnect from '../../../lib/config/database';
 import { authenticateUser, AuthenticatedRequest } from '../../../lib/middleware/auth';
 import { ApiError, handleApiError } from '../../../lib/utils/errorHandler';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Connect to database
-  await import('../../../lib/config/database');
+  await dbConnect();
 
   const { id } = req.query;
 
@@ -31,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         const authenticatedReq = req as AuthenticatedRequest & NextApiRequest;
         (authenticatedReq as any).params = { id };  // Override params to match original structure
-        
+
         const updateResult = await TicketController.updateTicket(authenticatedReq, res as any);
         return res.status(200).json(updateResult);
 
@@ -44,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         const authDeleteReq = req as AuthenticatedRequest & NextApiRequest;
         (authDeleteReq as any).params = { id };  // Override params to match original structure
-        
+
         const deleteResult = await TicketController.deleteTicket(authDeleteReq, res as any);
         return res.status(200).json(deleteResult);
 

@@ -1,25 +1,30 @@
-import { Request, Response } from 'express';
-import { User } from '../models/User';
-import * as jwt from 'jsonwebtoken';
-import config from '../config/config';
-import { ApiError } from '../utils/errorHandler';
-import { AuthenticatedRequest } from '../middleware/auth';
+import { Request, Response } from "express";
+import { User } from "../models/User";
+import * as jwt from "jsonwebtoken";
+import config from "../config/config";
+import { ApiError } from "../utils/errorHandler";
+import { AuthenticatedRequest } from "../middleware/auth";
 
 class UserController {
   // Register a new user - by default they get 'attendee' role
   async registerUser(req: Request, res: Response) {
     try {
-      const { email, password, firstName, lastName, requestOrganizerAccess } = req.body;
+      const { email, password, firstName, lastName, requestOrganizerAccess } =
+        req.body;
 
+      console.log("Mongodb URI:", config.db.uri);
       // Check if user already exists
       const existingUser = await User.findOne({ email });
+      console.log("Existing user check:", existingUser);
       if (existingUser) {
-        throw new ApiError('User already exists', 400);
+        throw new ApiError("User already exists", 400);
       }
 
       // Create new user with default attendee role
-      const roles = requestOrganizerAccess ? ['attendee', 'organizer'] : ['attendee'];
-      
+      const roles = requestOrganizerAccess
+        ? ["attendee", "organizer"]
+        : ["attendee"];
+
       const user = new User({
         email,
         password,
@@ -33,7 +38,7 @@ class UserController {
 
       // Generate JWT token
       if (!config.jwt.secret) {
-        throw new ApiError('JWT secret is not configured', 500);
+        throw new ApiError("JWT secret is not configured", 500);
       }
 
       // @ts-ignore
@@ -46,9 +51,9 @@ class UserController {
       );
 
       return {
-        message: requestOrganizerAccess 
-          ? 'User registered successfully. Organizer access requested and pending approval.' 
-          : 'User registered successfully',
+        message: requestOrganizerAccess
+          ? "User registered successfully. Organizer access requested and pending approval."
+          : "User registered successfully",
         token,
         user: {
           id: user._id,
@@ -68,29 +73,31 @@ class UserController {
     try {
       const userId = req.params?.userId;
       if (!userId) {
-        throw new ApiError('User ID is required', 400);
+        throw new ApiError("User ID is required", 400);
       }
-      
+
       const { roles } = req.body; // Array of roles to assign
 
       const user = await User.findById(userId);
       if (!user) {
-        throw new ApiError('User not found', 404);
+        throw new ApiError("User not found", 404);
       }
 
       // Validate that all roles are valid
-      const validRoles = ['attendee', 'organizer', 'admin'];
-      const invalidRoles = roles.filter((role: string) => !validRoles.includes(role));
-      
+      const validRoles = ["attendee", "organizer", "admin"];
+      const invalidRoles = roles.filter(
+        (role: string) => !validRoles.includes(role)
+      );
+
       if (invalidRoles.length > 0) {
-        throw new ApiError(`Invalid roles: ${invalidRoles.join(', ')}`, 400);
+        throw new ApiError(`Invalid roles: ${invalidRoles.join(", ")}`, 400);
       }
 
       user.roles = roles;
       await user.save();
 
       return {
-        message: 'User roles updated successfully',
+        message: "User roles updated successfully",
         user: {
           id: user._id,
           email: user.email,
@@ -112,18 +119,18 @@ class UserController {
       // Find user by email
       const user = await User.findOne({ email });
       if (!user) {
-        throw new ApiError('Invalid credentials', 400);
+        throw new ApiError("Invalid credentials", 400);
       }
 
       // Check password
       const isMatch = await user.comparePassword(password);
       if (!isMatch) {
-        throw new ApiError('Invalid credentials', 400);
+        throw new ApiError("Invalid credentials", 400);
       }
 
       // Generate JWT token
       if (!config.jwt.secret) {
-        throw new ApiError('JWT secret is not configured', 500);
+        throw new ApiError("JWT secret is not configured", 500);
       }
 
       // @ts-ignore
@@ -136,7 +143,7 @@ class UserController {
       );
 
       return {
-        message: 'Login successful',
+        message: "Login successful",
         token,
         user: {
           id: user._id,
@@ -155,10 +162,10 @@ class UserController {
   async getUserProfile(req: AuthenticatedRequest, res: Response) {
     try {
       // The user is already attached to the request via authenticateUser middleware
-      const user = await User.findById(req.userId).select('-password');
+      const user = await User.findById(req.userId).select("-password");
 
       if (!user) {
-        throw new ApiError('User not found', 404);
+        throw new ApiError("User not found", 404);
       }
 
       return user;

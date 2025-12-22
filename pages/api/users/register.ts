@@ -1,11 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import UserController from '../../../lib/controllers/UserController';
+import dbConnect from '../../../lib/config/database';
 import { validateUserRegistration } from '../../../lib/middleware/validation';
 import { ApiError, handleApiError } from '../../../lib/utils/errorHandler';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Connect to database
-  await import('../../../lib/config/database');
+  await dbConnect();
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });

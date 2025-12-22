@@ -1,12 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import EventController from '../../../lib/controllers/EventController';
+import dbConnect from '../../../lib/config/database';
 import { authenticateUser, requireOrganizer, AuthenticatedRequest } from '../../../lib/middleware/auth';
 import { validateEventCreation } from '../../../lib/middleware/validation';
 import { ApiError, handleApiError } from '../../../lib/utils/errorHandler';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Connect to database
-  await import('../../../lib/config/database');
+  await dbConnect();
 
   try {
     switch (req.method) {

@@ -1,11 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import TicketController from '../../../lib/controllers/TicketController';
+import dbConnect from '../../../lib/config/database';
 import { authenticateUser, AuthenticatedRequest } from '../../../lib/middleware/auth';
 import { ApiError, handleApiError } from '../../../lib/utils/errorHandler';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Connect to database
-  await import('../../../lib/config/database');
+  await dbConnect();
 
   try {
     switch (req.method) {

@@ -1,13 +1,14 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import UserController from '@/lib/controllers/UserController';
+import dbConnect from '@/lib/config/database';
 import { validateUserRegistration, validateUserLogin } from '@/lib/middleware/validation';
 import { ApiError, handleApiError } from '@/lib/utils/errorHandler';
 import { authenticateUser, AuthenticatedRequest } from '@/lib/middleware/auth';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Connect to database
-  await import('@/lib/config/database');
-  
+  await dbConnect();
+
   try {
     switch (req.method) {
       case 'POST':
@@ -32,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         } else {
           return res.status(400).json({ error: 'Invalid endpoint' });
         }
-        
+
       case 'GET':
         // Authenticate user for profile route
         const authResult = authenticateUser(req, res);
@@ -44,7 +45,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const authenticatedReq = req as AuthenticatedRequest;
         const result = await UserController.getUserProfile(authenticatedReq, undefined as any);
         return res.status(200).json(result);
-        
+
       case 'PATCH':
         // Authenticate user
         const authResult2 = authenticateUser(req, res);
@@ -69,7 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Update user roles - note: this route is deprecated in favor of the [userId]/roles route
         const updateResult = await UserController.updateUserRoles(controllerReq, undefined as any);
         return res.status(200).json(updateResult);
-        
+
       default:
         res.setHeader('Allow', ['POST', 'GET', 'PATCH']);
         return res.status(405).json({ error: `Method ${req.method} Not Allowed` });

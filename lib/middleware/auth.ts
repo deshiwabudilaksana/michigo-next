@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import * as jwt from "jsonwebtoken";
 import { User } from "../models/User";
+import dbConnect from "../config/database";
 import config from "../config/config";
 import { ApiError } from "../utils/errorHandler";
 
@@ -38,9 +39,9 @@ export const authenticateUser = async (
     }
 
     const decoded = jwt.verify(token, config.jwt.secret) as { userId: string };
-    
+
     // Connect to DB before querying
-    await import('../config/database');
+    await dbConnect();
     const user = await User.findById(decoded.userId).select('-password');
 
     if (!user) {
@@ -50,7 +51,7 @@ export const authenticateUser = async (
     // Assign user info to the request object
     (req as AuthenticatedRequest).userId = decoded.userId;
     (req as AuthenticatedRequest).user = user;
-    
+
     return undefined; // Success - no error
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
@@ -71,13 +72,13 @@ export const requireRole = (roles: string[]) => {
       if (!authenticatedReq.user) {
         throw new ApiError('Authentication required', 401);
       }
-      
+
       const hasRequiredRole = roles.some(role => authenticatedReq.user.hasRole(role));
-      
+
       if (!hasRequiredRole) {
         throw new ApiError('Insufficient permissions', 403);
       }
-      
+
       return undefined; // Success - no error
     } catch (error) {
       if (error instanceof ApiError) {
