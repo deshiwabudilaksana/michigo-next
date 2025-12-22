@@ -60,3 +60,5 @@ Icon?
 # Local configuration
 config/
 *.local
+.vercel
+.env*.local
