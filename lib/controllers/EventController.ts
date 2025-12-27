@@ -1,10 +1,16 @@
 import { Request, Response } from "express";
+import { NextApiRequest, NextApiResponse } from "next";
 import { Event } from "../models/Event";
 import { User } from "../models/User";
+import { Vendor } from "../models/Vendor";
 import { ApiError } from "../utils/errorHandler";
 import { AuthenticatedRequest } from "../middleware/auth";
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import config from "../config/config";
+
+// Define types that can handle both Express and Next.js patterns
+type AnyRequest = Request | (NextApiRequest & { userId?: string; user?: any; params?: any });
+type AnyResponse = Response | NextApiResponse;
 
 interface EventFilters {
   category?: string;
@@ -16,7 +22,7 @@ interface EventFilters {
 
 class EventController {
   // Create a new event
-  async createEvent(req: AuthenticatedRequest, res: Response) {
+  async createEvent(req: AuthenticatedRequest, res?: AnyResponse | null) {
     try {
       const {
         title,
@@ -28,6 +34,7 @@ class EventController {
         totalTickets,
         price,
         imageUrl,
+        vendorId,
       } = req.body;
       const organizerId = req.userId;
 
@@ -45,6 +52,21 @@ class EventController {
         );
       }
 
+      // Validate vendor - vendorId is required
+      if (!vendorId) {
+        throw new ApiError("Vendor ID is required", 400);
+      }
+
+      const vendor = await Vendor.findById(vendorId);
+      if (!vendor) {
+        throw new ApiError("Vendor not found", 404);
+      }
+
+      // Check if the vendor belongs to the current user or if the user is an admin
+      if (vendor.userId.toString() !== req.userId && !req.user.hasRole("admin")) {
+        throw new ApiError("Access denied. You can only use your own vendors.", 403);
+      }
+
       const event = new Event({
         title,
         description,
@@ -56,23 +78,44 @@ class EventController {
         availableTickets: totalTickets,
         price,
         organizerId,
+        vendorId: vendor._id,
         imageUrl,
         isPublished: false,
       });
 
       await event.save();
 
-      return {
+      const result = {
         message: "Event created successfully",
         event,
       };
+
+      // If res is provided, send response directly (Express.js pattern)
+      if (res) {
+        res.status(201).json(result);
+        return; // Return undefined when response is sent
+      } else {
+        // Otherwise return result for Next.js pattern
+        return result;
+      }
     } catch (error) {
-      throw error;
+      // If res is provided, send error response directly (Express.js pattern)
+      if (res) {
+        if (error instanceof ApiError) {
+          res.status(error.statusCode).json({ error: error.message });
+        } else {
+          res.status(500).json({ error: "Internal Server Error" });
+        }
+        return; // Return undefined when response is sent
+      } else {
+        // Otherwise throw error for Next.js pattern to handle
+        throw error;
+      }
     }
   }
 
   // Get all events with optional filters
-  async getAllEvents(req: Request, res: Response) {
+  async getAllEvents(req: AnyRequest, res?: AnyResponse | null) {
     try {
       const {
         category,
@@ -91,13 +134,14 @@ class EventController {
 
       const events = await Event.find(filter)
         .populate("organizerId", "firstName lastName email roles") // Include roles in organizer info
+        .populate("vendorId", "name description contactEmail contactPhone website") // Populate vendor details
         .limit(Number(limit))
         .skip(Number(limit) * (Number(page) - 1))
         .sort({ date: 1 });
 
       const total = await Event.countDocuments(filter);
 
-      return {
+      const result = {
         events,
         pagination: {
           total,
@@ -105,31 +149,68 @@ class EventController {
           pages: Math.ceil(total / Number(limit)),
         },
       };
+
+      // If res is provided, send response directly (Express.js pattern)
+      if (res) {
+        res.status(200).json(result);
+        return; // Return undefined when response is sent
+      } else {
+        // Otherwise return result for Next.js pattern
+        return result;
+      }
     } catch (error) {
-      throw error;
+      // If res is provided, send error response directly (Express.js pattern)
+      if (res) {
+        if (error instanceof ApiError) {
+          res.status(error.statusCode).json({ error: error.message });
+        } else {
+          res.status(500).json({ error: "Internal Server Error" });
+        }
+        return; // Return undefined when response is sent
+      } else {
+        // Otherwise throw error for Next.js pattern to handle
+        throw error;
+      }
     }
   }
 
   // Get a single event by ID
-  async getEventById(req: Request, res: Response) {
+  async getEventById(req: AnyRequest, res?: AnyResponse | null) {
     try {
       const eventId = req.params?.id;
       if (!eventId) {
         throw new ApiError("Event ID is required", 400);
       }
-      
-      const event = await Event.findById(eventId).populate(
-        "organizerId",
-        "firstName lastName email roles"
-      );
+
+      const event = await Event.findById(eventId)
+        .populate("organizerId", "firstName lastName email roles")
+        .populate("vendorId", "name description contactEmail contactPhone website"); // Populate vendor details
 
       if (!event) {
         throw new ApiError("Event not found", 404);
       }
 
-      return event;
+      // If res is provided, send response directly (Express.js pattern)
+      if (res) {
+        res.status(200).json(event);
+        return; // Return undefined when response is sent
+      } else {
+        // Otherwise return result for Next.js pattern
+        return event;
+      }
     } catch (error) {
-      throw error;
+      // If res is provided, send error response directly (Express.js pattern)
+      if (res) {
+        if (error instanceof ApiError) {
+          res.status(error.statusCode).json({ error: error.message });
+        } else {
+          res.status(500).json({ error: "Internal Server Error" });
+        }
+        return; // Return undefined when response is sent
+      } else {
+        // Otherwise throw error for Next.js pattern to handle
+        throw error;
+      }
     }
   }
 
@@ -147,8 +228,9 @@ class EventController {
         price,
         imageUrl,
         isPublished,
+        vendorId,
       } = req.body;
-      
+
       const eventId = req.params?.id;
       if (!eventId) {
         throw new ApiError("Event ID is required", 400);
@@ -171,6 +253,26 @@ class EventController {
         );
       }
 
+      // Validate vendor if vendorId is provided
+      let validatedVendorId = undefined;
+      if (vendorId !== undefined) { // Allow vendorId to be explicitly set to null
+        if (vendorId) {
+          const vendor = await Vendor.findById(vendorId);
+          if (!vendor) {
+            throw new ApiError("Vendor not found", 404);
+          }
+          // Check if the vendor belongs to the current user or if the user is an admin
+          if (vendor.userId.toString() !== req.userId && !req.user.hasRole("admin")) {
+            throw new ApiError("Access denied. You can only use your own vendors.", 403);
+          }
+          validatedVendorId = vendor._id;
+        } else {
+          validatedVendorId = null; // Explicitly set to null to remove vendor association
+        }
+      } else {
+        validatedVendorId = event.vendorId; // Keep existing vendorId if not provided
+      }
+
       const updatedEvent = await Event.findByIdAndUpdate(
         eventId,
         {
@@ -189,9 +291,12 @@ class EventController {
           price,
           imageUrl,
           isPublished,
+          vendorId: validatedVendorId,
         },
         { new: true }
-      ).populate("organizerId", "firstName lastName email roles");
+      )
+      .populate("organizerId", "firstName lastName email roles")
+      .populate("vendorId", "name description contactEmail contactPhone website"); // Populate vendor details
 
       return {
         message: "Event updated successfully",
@@ -209,7 +314,7 @@ class EventController {
       if (!eventId) {
         throw new ApiError("Event ID is required", 400);
       }
-      
+
       const event = await Event.findById(eventId);
 
       if (!event) {
@@ -242,7 +347,7 @@ class EventController {
       if (!eventId) {
         throw new ApiError("Event ID is required", 400);
       }
-      
+
       const event = await Event.findById(eventId);
 
       if (!event) {
@@ -264,7 +369,9 @@ class EventController {
         eventId,
         { isPublished: true },
         { new: true }
-      ).populate("organizerId", "firstName lastName email roles");
+      )
+      .populate("organizerId", "firstName lastName email roles")
+      .populate("vendorId", "name description contactEmail contactPhone website"); // Populate vendor details
 
       return {
         message: "Event published successfully",

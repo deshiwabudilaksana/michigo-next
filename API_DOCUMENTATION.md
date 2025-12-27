@@ -189,7 +189,8 @@ Authorization: Bearer <token>
     "location": "Event Location",
     "category": "Conference",
     "totalTickets": 100,
-    "price": 50
+    "price": 50,
+    "vendorId": "vendor-id-123"
   }
   ```
 - **Validation**:
@@ -201,6 +202,7 @@ Authorization: Bearer <token>
   - category: required, minimum 2 characters
   - totalTickets: required, minimum 1
   - price: required, minimum 0
+  - vendorId: required, minimum 1 character
 - **Response**:
   ```json
   {
@@ -345,6 +347,171 @@ Authorization: Bearer <token>
   ```json
   {
     "message": "Ticket cancelled successfully"
+  }
+  ```
+
+### Vendors
+
+#### GET `/api/vendors`
+- **Description**: Get all vendors (organizer/admin only)
+- **Authorization**: Yes (organizer or admin role required)
+- **Query Parameters**:
+  - `page`: Page number (default: 1)
+  - `limit`: Items per page (default: 10)
+  - `search`: Search vendors by name or description
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "count": 1,
+    "pagination": {
+      "page": 1,
+      "limit": 10,
+      "total": 1,
+      "pages": 1
+    },
+    "data": [
+      {
+        "id": "vendor-id-123",
+        "name": "Tech Conference Vendors",
+        "description": "Specialized in tech conference services",
+        "contactEmail": "contact@techvendors.com",
+        "contactPhone": "+1234567890",
+        "userId": "user-id-456",
+        "createdAt": "2025-12-21T06:50:18.003Z",
+        "updatedAt": "2025-12-21T06:50:18.003Z"
+      }
+    ]
+  }
+  ```
+
+#### POST `/api/vendors`
+- **Description**: Create a new vendor (organizer/admin only)
+- **Authorization**: Yes (organizer or admin role required)
+- **Request Body**:
+  ```json
+  {
+    "name": "New Vendor Company",
+    "description": "This is a new vendor specializing in event services",
+    "contactEmail": "contact@newvendor.com",
+    "contactPhone": "+1987654321"
+  }
+  ```
+- **Validation**:
+  - name: required, minimum 2 characters
+  - description: required, minimum 10 characters
+  - contactEmail: required, valid email format
+  - contactPhone: required
+- **Response**:
+  ```json
+  {
+    "message": "Vendor created successfully",
+    "vendor": {
+      "id": "vendor-id-789",
+      "name": "New Vendor Company",
+      "description": "This is a new vendor specializing in event services",
+      "contactEmail": "contact@newvendor.com",
+      "contactPhone": "+1987654321",
+      "userId": "current-user-id",
+      "createdAt": "2025-12-21T06:50:18.003Z",
+      "updatedAt": "2025-12-21T06:50:18.003Z"
+    }
+  }
+  ```
+
+#### GET `/api/vendors/[id]`
+- **Description**: Get vendor by ID
+- **Authorization**: Yes (organizer or admin role required)
+- **URL Parameters**: `id` - Vendor ID
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "id": "vendor-id-123",
+      "name": "Tech Conference Vendors",
+      "description": "Specialized in tech conference services",
+      "contactEmail": "contact@techvendors.com",
+      "contactPhone": "+1234567890",
+      "userId": "user-id-456",
+      "createdAt": "2025-12-21T06:50:18.003Z",
+      "updatedAt": "2025-12-21T06:50:18.003Z"
+    }
+  }
+  ```
+
+#### PUT `/api/vendors/[id]`
+- **Description**: Update vendor (organizer/admin only)
+- **Authorization**: Yes (organizer or admin role required)
+- **URL Parameters**: `id` - Vendor ID
+- **Request Body**:
+  ```json
+  {
+    "name": "Updated Vendor Name",
+    "description": "Updated vendor description",
+    "contactEmail": "updated@vendor.com",
+    "contactPhone": "+1111111111"
+  }
+  ```
+- **Response**:
+  ```json
+  {
+    "message": "Vendor updated successfully",
+    "vendor": {
+      "id": "vendor-id-123",
+      "name": "Updated Vendor Name",
+      "description": "Updated vendor description",
+      "contactEmail": "updated@vendor.com",
+      "contactPhone": "+1111111111",
+      "userId": "user-id-456",
+      "createdAt": "2025-12-21T06:50:18.003Z",
+      "updatedAt": "2025-12-21T07:00:00.000Z"
+    }
+  }
+  ```
+
+#### DELETE `/api/vendors/[id]`
+- **Description**: Delete vendor (organizer/admin only)
+- **Authorization**: Yes (organizer or admin role required)
+- **URL Parameters**: `id` - Vendor ID
+- **Response**:
+  ```json
+  {
+    "message": "Vendor deleted successfully"
+  }
+  ```
+
+#### GET `/api/vendors/user/[userId]`
+- **Description**: Get vendors by user ID
+- **Authorization**: Yes (user must be authenticated)
+- **URL Parameters**: `userId` - User ID
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "count": 2,
+    "data": [
+      {
+        "id": "vendor-id-123",
+        "name": "Tech Conference Vendors",
+        "description": "Specialized in tech conference services",
+        "contactEmail": "contact@techvendors.com",
+        "contactPhone": "+1234567890",
+        "userId": "user-id-456",
+        "createdAt": "2025-12-21T06:50:18.003Z",
+        "updatedAt": "2025-12-21T06:50:18.003Z"
+      },
+      {
+        "id": "vendor-id-456",
+        "name": "Event Catering Services",
+        "description": "Professional catering for events",
+        "contactEmail": "info@catering.com",
+        "contactPhone": "+13334445555",
+        "userId": "user-id-456",
+        "createdAt": "2025-12-20T10:30:00.000Z",
+        "updatedAt": "2025-12-20T10:30:00.000Z"
+      }
+    ]
   }
   ```
 

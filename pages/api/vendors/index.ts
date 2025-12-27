@@ -1,8 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import EventController from '@/lib/controllers/EventController';
+import VendorController from '@/lib/controllers/VendorController';
 import dbConnect from '@/lib/config/database';
 import { authenticateUser, requireOrganizer, AuthenticatedRequest } from '@/lib/middleware/auth';
-import { validateEventCreation } from '@/lib/middleware/validation';
 import { ApiError, handleApiError } from '@/lib/utils/errorHandler';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -20,23 +19,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         const reqWithUser = req as AuthenticatedRequest & NextApiRequest;
         (reqWithUser as any).params = req.query; // Add params for compatibility
+
         const organizerCheck = requireOrganizer(reqWithUser, res);
         if (organizerCheck instanceof Error) {
           return res.status(403).json({ error: organizerCheck.message });
         }
 
-        // Validate event creation data
-        const validationError = validateEventCreation(req, res);
-        if (validationError) {
-          return res.status(400).json({ error: validationError.message || validationError });
-        }
-
-        const createResult = await EventController.createEvent(reqWithUser, res as any);
+        const createResult = await VendorController.createVendor(reqWithUser, res as any);
         return res.status(201).json(createResult);
 
       case 'GET':
-        // No authentication required for getting all events
-        const getAllResult = await EventController.getAllEvents(req as any, res as any);
+        // Authentication required to get vendors
+        const getAuthResult = authenticateUser(req, res);
+        if (getAuthResult instanceof Error) {
+          return res.status(401).json({ error: getAuthResult.message });
+        }
+
+        const getReq = req as AuthenticatedRequest & NextApiRequest;
+        (getReq as any).params = req.query; // Add params for compatibility
+
+        const getAllResult = await VendorController.getAllVendors(getReq, res as any);
         return res.status(200).json(getAllResult);
 
       default:
@@ -44,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
     }
   } catch (error) {
-    console.error('Event API error:', error);
+    console.error('Vendor API error:', error);
     const errorResponse = handleApiError(error as Error);
     return res.status(errorResponse.error.includes('Validation Error') ? 400 : (error as ApiError).statusCode || 500).json(errorResponse);
   }

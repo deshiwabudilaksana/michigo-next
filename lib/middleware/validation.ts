@@ -167,6 +167,7 @@ export const validateEventCreation = (req: NextApiRequest, res: NextApiResponse)
     category: { required: true, type: "string", minLength: 2 },
     totalTickets: { required: true, type: "number", min: 1 },
     price: { required: true, type: "number", min: 0 },
+    vendorId: { required: true, type: "string", minLength: 1 },
   };
   return validateBody(schema)(req, res);
 };

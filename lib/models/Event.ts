@@ -13,6 +13,7 @@ export interface IEvent extends Document {
   availableTickets: number;
   price: number;
   organizerId: mongoose.Types.ObjectId;
+  vendorId?: mongoose.Types.ObjectId; // Reference to Vendor
   imageUrl?: string;
   isPublished: boolean;
   status: EventStatus; // Use status enum
@@ -77,6 +78,11 @@ const eventSchema = new mongoose.Schema<IEvent>({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
+  },
+  vendorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Vendor',
+    required: true, // Vendor ID is now required for all events
   },
   imageUrl: {
     type: String,

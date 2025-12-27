@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import UserController from '../../../lib/controllers/UserController';
-import dbConnect from '../../../lib/config/database';
-import { authenticateUser, AuthenticatedRequest } from '../../../lib/middleware/auth';
-import { ApiError, handleApiError } from '../../../lib/utils/errorHandler';
+import UserController from '@/lib/controllers/UserController';
+import dbConnect from '@/lib/config/database';
+import { authenticateUser, AuthenticatedRequest } from '@/lib/middleware/auth';
+import { ApiError, handleApiError } from '@/lib/utils/errorHandler';
 import jwt from 'jsonwebtoken';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
