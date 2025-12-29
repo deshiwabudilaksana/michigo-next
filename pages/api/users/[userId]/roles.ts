@@ -24,6 +24,7 @@ export default async function handler(
 
     // Check if user is admin
     const authenticatedReq = req as AuthenticatedRequest;
+    console.log("Authenticated user roles:", authenticatedReq.user?.roles);
     if (
       !authenticatedReq.user?.hasRole ||
       !authenticatedReq.user.hasRole("admin")
