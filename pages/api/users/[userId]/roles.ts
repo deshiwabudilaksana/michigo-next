@@ -11,6 +11,8 @@ export default async function handler(
   // Connect to database
   await dbConnect();
 
+  console.log("Authenticated user roles:", (req as AuthenticatedRequest).user);
+
   if (req.method !== "PATCH") {
     return res.status(405).json({ error: "Method not allowed" });
   }
