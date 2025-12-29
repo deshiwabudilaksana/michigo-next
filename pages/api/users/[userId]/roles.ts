@@ -18,6 +18,7 @@ export default async function handler(
   try {
     // Authenticate user
     const authResult = await authenticateUser(req, res);
+    console.log("Authentication result:", authResult);
     if (authResult instanceof Error) {
       return res.status(401).json({ error: authResult.message });
     }
